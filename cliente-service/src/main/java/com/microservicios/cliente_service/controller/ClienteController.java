@@ -27,8 +27,7 @@ public class ClienteController {
 
     @PutMapping("/{id}")
     public ResponseEntity<Cliente> actualizarCliente(@PathVariable Long id, @RequestBody Cliente clienteDetalles) {
-        Cliente cliente = clienteRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
+        Cliente cliente = clienteRepository.findById(id).orElseThrow(() -> new RuntimeException("Cliente no encontrado"));
         cliente.setNombre(clienteDetalles.getNombre());
         cliente.setDireccion(clienteDetalles.getDireccion());
         cliente.setTelefono(clienteDetalles.getTelefono());

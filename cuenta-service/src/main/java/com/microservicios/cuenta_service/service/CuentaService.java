@@ -7,8 +7,11 @@ import com.microservicios.cuenta_service.repository.MovimientoRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Service
 public class CuentaService {
@@ -40,7 +43,7 @@ public class CuentaService {
             cuenta.setNumeroCuenta(cuentaActualizada.getNumeroCuenta());
             cuenta.setTipoCuenta(cuentaActualizada.getTipoCuenta());
             cuenta.setSaldoInicial(cuentaActualizada.getSaldoInicial());
-            cuenta.setEstado(cuentaActualizada.getEstado());
+            cuenta.setEstado(cuentaActualizada.isEstado());
             return cuentaRepository.save(cuenta);
         }).orElseThrow(() -> new RuntimeException("Cuenta no encontrada"));
     }
@@ -52,9 +55,42 @@ public class CuentaService {
 
     // Obtener movimientos de una cuenta
     public List<Movimiento> obtenerMovimientosPorCuenta(Long cuentaId) {
-        return movimientoRepository.findAll()
+    return movimientoRepository.findAll()
+            .stream()
+            .filter(mov -> mov.getCuentaId().equals(cuentaId))
+            .toList();
+}
+
+        // ==============================
+    // Reporte de Estado de Cuenta
+    // ==============================
+
+public List<Cuenta> generarReporte(Long clienteId, String fechaInicio, String fechaFin) {
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("yyyy-MM-dd");
+    LocalDate inicio = LocalDate.parse(fechaInicio, formatter);
+    LocalDate fin = LocalDate.parse(fechaFin, formatter);
+
+    List<Cuenta> cuentasCliente = cuentaRepository.findByClienteId(clienteId);
+
+    // Para cada cuenta, buscar movimientos dentro del rango
+    for (Cuenta cuenta : cuentasCliente) {
+        List<Movimiento> movimientosFiltrados = movimientoRepository.findAll()
                 .stream()
-                .filter(mov -> mov.getCuenta().getId().equals(cuentaId))
+                .filter(m -> m.getCuentaId().equals(cuenta.getNumeroCuenta()))
+                .filter(m -> {
+                    
+                    LocalDate fechaMov = m.getFecha();
+
+                    return (fechaMov.isEqual(inicio) || fechaMov.isAfter(inicio)) &&
+                           (fechaMov.isEqual(fin) || fechaMov.isBefore(fin));
+                })
                 .toList();
+
+        // Si quieres devolver los movimientos junto con la cuenta, crea un DTO
+        // Por ejemplo: CuentaReporteDTO { Cuenta cuenta; List<Movimiento> movimientos; }
+        
     }
+
+    return cuentasCliente;
+}
 }
